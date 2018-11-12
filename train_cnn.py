@@ -3,6 +3,8 @@
 
 from os.path import join
 
+import h5py
+
 import keras.backend as K
 from keras.callbacks import ModelCheckpoint
 from keras.layers import Conv2D, Dense, Activation, MaxPooling2D
@@ -10,6 +12,7 @@ from keras.layers import Flatten, BatchNormalization, Dropout
 from keras.layers.advanced_activations import PReLU
 from keras.models import Sequential, load_model
 from keras.optimizers import Adam
+from keras.preprocessing.image import load_img, img_to_array
 from keras.regularizers import l2
 
 
@@ -23,23 +26,54 @@ LAST_FEATURE_MAPS_SIZE = (128, 8, 8)
 PENULTIMATE_LAYER = 51
 PENULTIMATE_SIZE = 2048
 SOFTMAX_LAYER = 55
-SOFTMAX_SIZE = 1584
+SOFTMAX_SIZE = 29
+
+def load_img_arr(p):
+    return img_to_array(load_img(p))
+
+def preprocess_data(path):
+    img_lst = []
+    label_lst = []
+
+    for file in os.listdir(path):
+        artist = file.split('_')[0]
+        img_vec = img_to_array(load_img(file))
+        img_lst.append(img_vec)
+        label_lst.append(np.str(artist))
+
+    # save the feature vector using HDF5
+    h5f_data = h5py.File('output/cnn_data.h5', 'w+')
+    h5f_data.create_dataset('cnn_dataset_1', data=np.array(img_lst))
+
+    h5f_label = h5py.File('output/cnn_labels.h5', 'w+')
+    h5f_label.create_dataset('cnn_dataset_1', data=label_lst)
+
+    h5f_data.close()
+    h5f_label.close()
 
 
 def _train_model():
-    # train_data_gen = GET DATA INFO
-    # val_data_gen = GET DATA INFO
+    h5f_data = h5py.File('output/cnn_data.h5', 'r')
+    h5f_label = h5py.File('output/cnn_labels.h5', 'r')
+
+    training_data_str = h5f_data['cnn_dataset_1']
+    training_labels_str = h5f_label['cnn_dataset_1']
+
+    training_data = list(np.array(training_data_str))
+    training_labels = np.array(training_labels_str)
+
+    h5f_data.close()
+    h5f_label.close()
+
     model = _cnn(IMGS_DIM_3D)
 
-    model.fit_generator(
-        generator=train_data_gen,
-        nb_epoch=MAX_EPOCHS,
-        samples_per_epoch=data_info['num_tr'],
-        validation_data=val_data_gen,
-        nb_val_samples=data_info['num_val'],
+    model.fit(x=training_data,
+        y=training_labels,
+        batch_size=BATCH_SIZE,
+        epochs=MAX_EPOCHS,
+        validation_split=0.1,
         callbacks=[ModelCheckpoint(CNN_MODEL_FILE, save_best_only=True)],
         verbose=2)
-
 
 def _cnn(imgs_dim, compile_=True):
     model = Sequential()
