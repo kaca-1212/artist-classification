@@ -10,7 +10,7 @@ import mahotas
 import cv2
 import os
 import h5py
-
+import sys
 # fixed-sizes for image
 fixed_size = tuple((256, 256))
 
@@ -60,8 +60,10 @@ def fd_histogram(image, mask=None):
 
 def fd_hog(image):
     hog = cv2.HOGDescriptor()
-    h = hog.compute(image)
-    return h
+    img_squished = cv2.resize(image, (64,128))
+    locations  = ((0,0),)
+    h = hog.compute(image, locations = locations)
+    return h.flatten()
 
 # # get the training labels
 # train_labels = os.listdir(train_path)
@@ -74,21 +76,40 @@ def fd_hog(image):
 def get_feature_vectors(path):
     global_features = []
     labels = []
-
+    missed_files = []
     # # num of images per class
     # images_per_class = 80
-
+    
+    checkpoint = 1
+    
     # loop over the training data sub-folders
-    for file in os.listdir(path):
-        
-        # get the current training label
-        ### current_label = training_name
-        ### DO LATER
+    for ind, file in enumerate(os.listdir(path)):
+        """
+        if ind % 3000 == 2999:
+            print sys.getsizeof(global_features)
+            np.save('checkpoint' + str(checkpoint), np.array(global_features))
+            np.save('labels'+str(checkpoint),np.array(labels))
+            global_features = []
+            labels = []
+            checkpoint = checkpoint + 1
 
-       
+        # get the current training label
+        current_label = file.split('_')[0]
+        ### DO LATER
+        
+        print file
+
+
 
         # read the image and resize it to a fixed-size
-        image = cv2.imread(file)
+        try:
+            image = cv2.imread(path+'/'+file)
+        except:
+            missed_files.append(file)
+            continue
+        if image is None:
+            continue
+        print str(image.shape[0]*image.shape[1]*image.shape[2])
         image = cv2.resize(image, fixed_size)
 
         ####################################
@@ -107,14 +128,29 @@ def get_feature_vectors(path):
         labels.append(current_label)
         global_features.append(global_feature)
 
+   # Save the last few
+
+    print sys.getsizeof(global_features)
+    np.save('checkpoint' + str(checkpoint), np.array(global_features))
+    np.save('labels'+str(checkpoint),np.array(labels))
+    print np.array(global_features).shape
+    global_features = []
+    checkpoint = checkpoint + 1
+    """
+    checkpoint = 6
+    global_features = np.row_stack((np.load('reducedpoint1.npy'), np.load('reducedpoint2.npy'), np.load('reducedpoint3.npy'), np.load('reducedpoint4.npy'), np.load('reducedpoint5.npy')  ))
+    labels = []
+    for c in range(1, checkpoint):
+        #global_features.extend(list(np.load('reducedpoint' + str(c)+ '.npy')))
+        labels.extend(list(np.load('labels' + str(c)+ '.npy')))
 
     print "[STATUS] completed Global Feature Extraction..."
 
     # get the overall feature vector size
-    print "[STATUS] feature vector size {}".format(np.array(global_features).shape)
+    #print "[STATUS] feature vector size {}".format(np.array(global_features).shape)
 
     # get the overall training label size
-    print "[STATUS] training Labels {}".format(np.array(labels).shape)
+    #print "[STATUS] training Labels {}".format(np.array(labels).shape)
 
     # encode the target labels
     targetNames = np.unique(labels)
@@ -124,7 +160,8 @@ def get_feature_vectors(path):
 
     # normalize the feature vector in the range (0-1)
     scaler = MinMaxScaler(feature_range=(0, 1))
-    rescaled_features = scaler.fit_transform(global_features)
+    scaler.fit_transform(global_features)
+    #global_features = scaler.fit_transform(global_features)
     print "[STATUS] feature vector normalized..."
 
     print "[STATUS] target labels: {}".format(target)
@@ -132,7 +169,7 @@ def get_feature_vectors(path):
 
     # save the feature vector using HDF5
     h5f_data = h5py.File('output/data.h5', 'w')
-    h5f_data.create_dataset('dataset_1', data=np.array(rescaled_features))
+    h5f_data.create_dataset('dataset_1', data=np.array(global_features))
 
     h5f_label = h5py.File('output/labels.h5', 'w')
     h5f_label.create_dataset('dataset_1', data=np.array(target))
@@ -142,4 +179,4 @@ def get_feature_vectors(path):
 
     print "[STATUS] end of training.."
 
-    return rescaled_features
+    return global_features
