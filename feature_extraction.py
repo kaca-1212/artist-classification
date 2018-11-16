@@ -27,10 +27,10 @@ test_size = 0.10
 seed = 9
 
 # feature-descriptor-1: Hu Moments
-# def fd_hu_moments(image):
-#     image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-#     feature = cv2.HuMoments(cv2.moments(image)).flatten()
-#     return feature
+def fd_hu_moments(image):
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    feature = cv2.HuMoments(cv2.moments(image)).flatten()
+    return feature
 
 # feature-descriptor-2: Haralick Texture
 def fd_haralick(image):
@@ -52,11 +52,11 @@ def fd_histogram(image, mask=None):
     # return the histogram
     return hist.flatten()
 
-# def fd_sift(image):
-#     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-#     sift = cv2.SIFT()
-#     kp = sift.detect(gray,None)
-#     return kp
+def fd_sift(image):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    sift = cv2.SIFT()
+    kp = sift.detect(gray,None)
+    return kp
 
 def fd_hog(image):
     hog = cv2.HOGDescriptor()
@@ -92,7 +92,7 @@ def get_feature_vectors(path):
             global_features = []
             labels = []
             checkpoint = checkpoint + 1
-
+        """
         # get the current training label
         current_label = file.split('_')[0]
         ### DO LATER
@@ -109,41 +109,42 @@ def get_feature_vectors(path):
             continue
         if image is None:
             continue
-        print str(image.shape[0]*image.shape[1]*image.shape[2])
+        #print str(image.shape[0]*image.shape[1]*image.shape[2])
         image = cv2.resize(image, fixed_size)
 
         ####################################
         # Global Feature extraction
         ####################################
-        fv_hog = fd_hog(image)
+        #fv_hog = fd_hog(image)
         fv_haralick   = fd_haralick(image)
         fv_histogram  = fd_histogram(image)
+        fv_hu = fd_hu_moments(image)
 
         ###################################
         # Concatenate global features
         ###################################
-        global_feature = np.hstack([fv_histogram, fv_haralick, fv_hog])
+        global_feature = np.hstack([fv_histogram, fv_haralick, fv_hu])
 
         # update the list of labels and feature vectors
         labels.append(current_label)
         global_features.append(global_feature)
 
    # Save the last few
-
+    """
     print sys.getsizeof(global_features)
     np.save('checkpoint' + str(checkpoint), np.array(global_features))
     np.save('labels'+str(checkpoint),np.array(labels))
     print np.array(global_features).shape
     global_features = []
     checkpoint = checkpoint + 1
-    """
+    
     checkpoint = 6
-    global_features = np.row_stack((np.load('reducedpoint1.npy'), np.load('reducedpoint2.npy'), np.load('reducedpoint3.npy'), np.load('reducedpoint4.npy'), np.load('reducedpoint5.npy')  ))
+    global_features = np.row_stack((np.load('checkpoint1.npy'), np.load('checkpoint2.npy'), np.load('checkpoint3.npy'), np.load('checkpoint4.npy'), np.load('checkpoint5.npy')  ))
     labels = []
     for c in range(1, checkpoint):
         #global_features.extend(list(np.load('reducedpoint' + str(c)+ '.npy')))
         labels.extend(list(np.load('labels' + str(c)+ '.npy')))
-
+    """
     print "[STATUS] completed Global Feature Extraction..."
 
     # get the overall feature vector size
@@ -166,12 +167,12 @@ def get_feature_vectors(path):
 
     print "[STATUS] target labels: {}".format(target)
     print "[STATUS] target labels shape: {}".format(target.shape)
-
+    
     # save the feature vector using HDF5
-    h5f_data = h5py.File('output/data.h5', 'w')
+    h5f_data = h5py.File('output/data3.h5', 'w')
     h5f_data.create_dataset('dataset_1', data=np.array(global_features))
 
-    h5f_label = h5py.File('output/labels.h5', 'w')
+    h5f_label = h5py.File('output/labels3.h5', 'w')
     h5f_label.create_dataset('dataset_1', data=np.array(target))
 
     h5f_data.close()
