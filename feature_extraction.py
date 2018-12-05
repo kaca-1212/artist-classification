@@ -5,8 +5,9 @@
 # organize imports
 from sklearn.preprocessing import LabelEncoder
 from sklearn.preprocessing import MinMaxScaler
-from skimage.feature import greycomatrix, greycoprops
+from skimage.feature import greycomatrix, greycoprops, local_binary_pattern
 from sklearn.cluster import MiniBatchKMeans
+import gist
 import numpy as np
 import mahotas
 import cv2
@@ -59,9 +60,6 @@ def create_BOVW(path):
 
     return kmeans
 
-
-
-
 # feature-descriptor-1: Hu Moments
 def fd_hu_moments(image):
     image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -107,12 +105,20 @@ def fd_hog(image):
     return h.flatten()
 
 def fd_orb(image):
-    orb = cv2.ORB()
+    orb = cv2.ORB_create()
     kp = orb.detect(image, None)
     kp, des = orb.compute(img, kp)
     return kp
 
-active_fd = [0,0,0,1,0,0]
+def fd_gist(image):
+    return gist.extract(img)
+
+def fd_lbp(image):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    lbp = local_binary_pattern(gray, P=16, R=2)
+    return lbp
+
+active_fd = [0,0,0,1,0,0,0,0]
 # # get the training labels
 # train_labels = os.listdir(train_path)
 
@@ -177,6 +183,10 @@ def get_feature_vectors(path):
             feature_list.append(fd_hog(image))
         if active_fd[5]:
             feature_list.append(fd_orb(image))
+        if active_fd[6]:
+            feature_list.append(fd_gist(image))
+        if active_fd[7]:
+            feature_list.append(fd_lbp(image))
         
 
         ###################################
