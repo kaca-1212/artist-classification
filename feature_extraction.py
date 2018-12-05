@@ -138,15 +138,19 @@ def get_feature_vectors(path):
     
     # loop over the training data sub-folders
     for ind, file in enumerate(os.listdir(path)):
-        """
         if ind % 3000 == 2999:
             print sys.getsizeof(global_features)
             np.save('checkpoint' + str(checkpoint), np.array(global_features))
-            np.save('labels'+str(checkpoint),np.array(labels))
+            # np.save('labels'+str(checkpoint),np.array(labels))
+            if max_features:
+                max_features = np.max(np.vstack([max_features, global_features]), axis=0)
+                min_features = np.min(np.vstack([min_features, global_features]), axis=0)
+            else:
+                max_features = np.max(global_features, axis=0)
+                min_features = np.min(global_features, axis=0)
             global_features = []
-            labels = []
+            # labels = []
             checkpoint = checkpoint + 1
-        """
         # get the current training label
         current_label = file.split('_')[0]
         ### DO LATER
@@ -228,27 +232,31 @@ def get_feature_vectors(path):
     target = le.fit_transform(labels)
     print "[STATUS] training labels encoded..."
 
-    # normalize the feature vector in the range (0-1)
-    scaler = MinMaxScaler(feature_range=(0, 1))
-    scaler.fit_transform(global_features)
-    #global_features = scaler.fit_transform(global_features)
-    print "[STATUS] feature vector normalized..."
+    # # normalize the feature vector in the range (0-1)
+    # scaler = MinMaxScaler(feature_range=(0, 1))
+    # scaler.fit_transform(global_features)
+    # #global_features = scaler.fit_transform(global_features)
+    # print "[STATUS] feature vector normalized..."
 
-    print "[STATUS] target labels: {}".format(target)
-    print "[STATUS] target labels shape: {}".format(target.shape)
+    # print "[STATUS] target labels: {}".format(target)
+    # print "[STATUS] target labels shape: {}".format(target.shape)
     
+    for i in range(1, checkpoint + 1):
+        cp = np.load('checkpoint%s' % i, dtype=np.float32)
+        cp = (cp - min_features) / (max_features - min_features)
 
-    encoding = int("".join(map(str, active_fd)), base=2)
+        encoding = int("".join(map(str, active_fd)), base=2)
 
-    # save the feature vector using HDF5
-    h5f_data = h5py.File('output/data_' + str(encoding) + '.h5', 'w')
-    h5f_data.create_dataset('dataset_1', data=np.array(global_features))
+        t = target[(i-1) * 3000: i * 3000]
+        # save the feature vector using HDF5
+        h5f_data = h5py.File('output/data_%s_%s' % (str(encoding), i) + '.h5', 'w')
+        h5f_data.create_dataset('dataset_1', data=np.array(global_features))
+        h5f_data.close()
 
-    h5f_label = h5py.File('output/labels_' + str(encoding) + '.h5', 'w')
-    h5f_label.create_dataset('dataset_1', data=np.array(target))
+        h5f_label = h5py.File('output/labels_%s_%s' % (str(encoding), i) + '.h5', 'w')
+        h5f_label.create_dataset('dataset_1', data=np.array(t))
+        h5f_label.close()
 
-    h5f_data.close()
-    h5f_label.close()
 
     print "[STATUS] end of training.."
 
