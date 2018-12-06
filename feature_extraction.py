@@ -137,12 +137,15 @@ def get_feature_vectors(path):
     checkpoint = 1
     image_count = len(os.listdir(path))
     # loop over the training data sub-folders
+    # Expected number of checkpoints
+    checkpoint_count = math.ceil(3000.0/ len(os.listdir(path)))
+    if 'checkpoint'+str(checkpoint3) + ' .npy' not in os.listdir('.'):
     for ind, file in enumerate(os.listdir(path)):
         if ind > 0 and ind % 3000 == 0:
             print np.shape(global_features)
             print sys.getsizeof(global_features)
             global_features = np.array(global_features)
-            np.save('checkpoint' + str(checkpoint), global_features.astype('float16'))
+            np.save('checkpoint' + str(checkpoint) + '.npy', global_features.astype('float16'))
             # np.save('labels'+str(checkpoint),np.array(labels))
             if 'max_features' in dir():
                 max_features = np.max(np.vstack([max_features, global_features]), axis=0)
@@ -204,16 +207,16 @@ def get_feature_vectors(path):
         labels.append(current_label)
         global_features.append(global_feature)
 
-   # Save the last few
-    """
-    print sys.getsizeof(global_features)
+    # Save the last few
+    
+    #print sys.getsizeof(global_features)
     np.save('checkpoint' + str(checkpoint), np.array(global_features))
-    np.save('labels'+str(checkpoint),np.array(labels))
-    print np.array(global_features).shape
+    # np.save('labels'+str(checkpoint),np.array(labels))
+    #print np.array(global_features).shape
+    max_features = np.max( np.vstack([ max_features, np.array(global_features) ])  )	    
     global_features = []
     checkpoint = checkpoint + 1
     
-    checkpoint = 6
     global_features = np.row_stack((np.load('checkpoint1.npy'), np.load('checkpoint2.npy'), np.load('checkpoint3.npy'), np.load('checkpoint4.npy'), np.load('checkpoint5.npy')  ))
     labels = []
     for c in range(1, checkpoint):
