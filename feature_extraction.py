@@ -139,90 +139,85 @@ def get_feature_vectors(path):
     # loop over the training data sub-folders
     # Expected number of checkpoints
     checkpoint_count = math.ceil(3000.0/ len(os.listdir(path)))
-    if 'checkpoint'+str(checkpoint3) + ' .npy' not in os.listdir('.'):
-    for ind, file in enumerate(os.listdir(path)):
-        if ind > 0 and ind % 3000 == 0:
-            print np.shape(global_features)
-            print sys.getsizeof(global_features)
-            global_features = np.array(global_features)
-            np.save('checkpoint' + str(checkpoint) + '.npy', global_features.astype('float16'))
-            # np.save('labels'+str(checkpoint),np.array(labels))
-            if 'max_features' in dir():
-                max_features = np.max(np.vstack([max_features, global_features]), axis=0)
-                min_features = np.min(np.vstack([min_features, global_features]), axis=0)
-            else:
-                max_features = np.max(global_features, axis=0)
-                min_features = np.min(global_features, axis=0)
-            global_features = []
-            # labels = []
-            checkpoint = checkpoint + 1
-        # get the current training label
-        current_label = file.split('_')[0]
-        ### DO LATER
+    if 'checkpoint'+str(checkpoint) + '3.npy' not in os.listdir('.'):
+        for ind, file in enumerate(os.listdir(path)):
+            if ind > 0 and ind % 3000 == 0:
+                print np.shape(global_features)
+                print sys.getsizeof(global_features)
+                global_features = np.array(global_features)
+                np.save('checkpoint' + str(checkpoint), global_features.astype('float16'))
+                # np.save('labels'+str(checkpoint),np.array(labels))
+                if 'max_features' in dir():
+                    max_features = np.max(np.vstack([max_features, global_features]), axis=0)
+                    min_features = np.min(np.vstack([min_features, global_features]), axis=0)
+                else:
+                    max_features = np.max(global_features, axis=0)
+                    min_features = np.min(global_features, axis=0)
+                global_features = []
+                # labels = []
+                checkpoint = checkpoint + 1
+            # get the current training label
+            current_label = file.split('_')[0]
+            ### DO LATER
+            
+            print file
+            print "%.2f" % ((100*ind+0.0)/image_count)
+
+
+            # read the image and resize it to a fixed-size
+            try:
+                image = cv2.imread(path+'/'+file)
+            except:
+                missed_files.append(file)
+                continue
+            if image is None:
+                continue
+            #print str(image.shape[0]*image.shape[1]*image.shape[2])
+            image = cv2.resize(image, fixed_size)
+
+            ####################################
+            # Global Feature extraction
+            ####################################
+            #fv_hog = fd_hog(image)
+            feature_list = []
+            if active_fd[0]:
+                feature_list.append(fd_hu_moments(image))
+            if active_fd[1]:
+                feature_list.append(fd_haralick(image))
+            if active_fd[2]:
+                feature_list.append(fd_histogram(image))
+            if active_fd[3]:
+                feature_list.append(fd_sift(image, bovw_dict))
+            if active_fd[4]:
+                feature_list.append(fd_hog(image))
+            if active_fd[5]:
+                feature_list.append(fd_orb(image))
+            if active_fd[6]:
+                feature_list.append(fd_gist(image))
+            if active_fd[7]:
+                feature_list.append(fd_lbp(image))
+            
+
+            ###################################
+            # Concatenate global features
+            ###################################
+            global_feature = np.hstack(feature_list)
+
+            # update the list of labels and feature vectors
+            labels.append(current_label)
+            global_features.append(global_feature)
+
+        # Save the last few
         
-        print file
-        print "%.2f" % ((100*ind+0.0)/image_count)
-
-
-        # read the image and resize it to a fixed-size
-        try:
-            image = cv2.imread(path+'/'+file)
-        except:
-            missed_files.append(file)
-            continue
-        if image is None:
-            continue
-        #print str(image.shape[0]*image.shape[1]*image.shape[2])
-        image = cv2.resize(image, fixed_size)
-
-        ####################################
-        # Global Feature extraction
-        ####################################
-        #fv_hog = fd_hog(image)
-        feature_list = []
-        if active_fd[0]:
-            feature_list.append(fd_hu_moments(image))
-        if active_fd[1]:
-            feature_list.append(fd_haralick(image))
-        if active_fd[2]:
-            feature_list.append(fd_histogram(image))
-        if active_fd[3]:
-            feature_list.append(fd_sift(image, bovw_dict))
-        if active_fd[4]:
-            feature_list.append(fd_hog(image))
-        if active_fd[5]:
-            feature_list.append(fd_orb(image))
-        if active_fd[6]:
-            feature_list.append(fd_gist(image))
-        if active_fd[7]:
-            feature_list.append(fd_lbp(image))
-        
-
-        ###################################
-        # Concatenate global features
-        ###################################
-        global_feature = np.hstack(feature_list)
-
-        # update the list of labels and feature vectors
-        labels.append(current_label)
-        global_features.append(global_feature)
-
-    # Save the last few
+        #print sys.getsizeof(global_features)
+        np.save('checkpoint' + str(checkpoint), np.array(global_features))
+        # np.save('labels'+str(checkpoint),np.array(labels))
+        #print np.array(global_features).shape
+        max_features = np.max( np.vstack([ max_features, np.array(global_features) ])  )	    
+        global_features = []
+        checkpoint = checkpoint + 1
     
-    #print sys.getsizeof(global_features)
-    np.save('checkpoint' + str(checkpoint), np.array(global_features))
-    # np.save('labels'+str(checkpoint),np.array(labels))
-    #print np.array(global_features).shape
-    max_features = np.max( np.vstack([ max_features, np.array(global_features) ])  )	    
-    global_features = []
-    checkpoint = checkpoint + 1
     
-    global_features = np.row_stack((np.load('checkpoint1.npy'), np.load('checkpoint2.npy'), np.load('checkpoint3.npy'), np.load('checkpoint4.npy'), np.load('checkpoint5.npy')  ))
-    labels = []
-    for c in range(1, checkpoint):
-        #global_features.extend(list(np.load('reducedpoint' + str(c)+ '.npy')))
-        labels.extend(list(np.load('labels' + str(c)+ '.npy')))
-    """
     print "[STATUS] completed Global Feature Extraction..."
 
     # get the overall feature vector size
@@ -247,7 +242,7 @@ def get_feature_vectors(path):
     # print "[STATUS] target labels shape: {}".format(target.shape)
     
     for i in range(1, checkpoint + 1):
-        cp = np.load('checkpoint%s' % i)
+        cp = np.load('checkpoint%s.npy' % i )
         cp = (cp - min_features) / (max_features - min_features)
 
         encoding = int("".join(map(str, active_fd)), base=2)
