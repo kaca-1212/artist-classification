@@ -5,6 +5,9 @@ from os.path import join
 
 import h5py
 
+import time
+
+
 import keras.backend as K
 from keras.callbacks import ModelCheckpoint
 from keras.layers import Conv2D, Dense, Activation, MaxPooling2D
@@ -26,7 +29,7 @@ LAST_FEATURE_MAPS_SIZE = (128, 8, 8)
 PENULTIMATE_LAYER = 51
 PENULTIMATE_SIZE = 2048
 SOFTMAX_LAYER = 55
-SOFTMAX_SIZE = 29
+SOFTMAX_SIZE = 15
 data_path = 'dataset/cnn_data'
 batch_size = 16
 
@@ -34,8 +37,7 @@ def load_img_arr(p):
     return img_to_array(load_img(p))
 
 def make_fit_gen(path):
-    train_datagen = ImageDataGenerator( featurewise_center=True,
-        featurewise_std_normalization=True,
+    train_datagen = ImageDataGenerator(
         rotation_range=180,
         zoom_range=0.2,
         width_shift_range=0.2,
@@ -45,7 +47,7 @@ def make_fit_gen(path):
         vertical_flip=True,
 fill_mode='reflect')
     
-    val_datagen = ImageDataGenerator(featurewise_center = True, featurewise_std_normalization=True)
+    val_datagen = ImageDataGenerator()
 
     train_generator = train_datagen.flow_from_directory(data_path + '/train', target_size=(256,256),batch_size = batch_size, class_mode = 'categorical')
     val_generator = val_datagen.flow_from_directory(data_path + '/validation', target_size=(256,256),batch_size = batch_size, class_mode = 'categorical')
@@ -87,12 +89,14 @@ def _train_model():
     h5f_data.close()
     h5f_label.close()
     """
-
+    start_time = time.time()
     model = _cnn(IMGS_DIM_3D)
     model = compile_model(model)
     gens = make_fit_gen('dataset/cnn_data')
-    model.fit_generator(gens[0], epochs = 200, validation_data = gens[1])
-    model.save_weights('run1.h5')
+    model.fit_generator(gens[0], epochs = 500, validation_data = gens[1])
+    model.save_weights('run4.h5')
+    elapsed_time = time.time()-start_time
+    print("Time elapsed: " + str(elapsed_time))
 
 def _cnn(imgs_dim, compile_=True):
     model = Sequential()
@@ -108,32 +112,28 @@ def _cnn(imgs_dim, compile_=True):
     model.add(BatchNormalization(axis=-1))
     model.add(ReLU())
     model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(_convolutional_layer(nb_filter=16))
+    """
+    model.add(_convolutional_layer(nb_filter=32))
     model.add(BatchNormalization(axis=-1))
     model.add(ReLU())
-    model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(_convolutional_layer(nb_filter=16))
-    model.add(BatchNormalization(axis=-1))
-    model.add(ReLU())
-    model.add(MaxPooling2D(pool_size=(2, 2)))
     
     model.add(_convolutional_layer(nb_filter=32))
     model.add(BatchNormalization(axis=-1))
     model.add(ReLU())
+    """
     model.add(_convolutional_layer(nb_filter=32))
     model.add(BatchNormalization(axis=-1))
     model.add(ReLU())
-    model.add(_convolutional_layer(nb_filter=32))
-    model.add(BatchNormalization(axis=-1))
-    model.add(ReLU())
     model.add(MaxPooling2D(pool_size=(2, 2)))
-
+    """
     model.add(_convolutional_layer(nb_filter=64))
     model.add(BatchNormalization(axis=-1))
     model.add(ReLU())
+    
     model.add(_convolutional_layer(nb_filter=64))
     model.add(BatchNormalization(axis=-1))
     model.add(ReLU())
+    
     model.add(_convolutional_layer(nb_filter=64))
     model.add(BatchNormalization(axis=-1))
     model.add(ReLU())
@@ -142,20 +142,24 @@ def _cnn(imgs_dim, compile_=True):
     model.add(_convolutional_layer(nb_filter=128))
     model.add(BatchNormalization(axis=-1))
     model.add(ReLU())
+    
     model.add(_convolutional_layer(nb_filter=128))
     model.add(BatchNormalization(axis=-1))
     model.add(ReLU())
+    """
     model.add(_convolutional_layer(nb_filter=128))
     model.add(BatchNormalization(axis=-1))
     model.add(ReLU())
     model.add(MaxPooling2D(pool_size=(2, 2)))
-
+    """
     model.add(_convolutional_layer(nb_filter=256))
     model.add(BatchNormalization(axis=-1))
     model.add(ReLU())
+    
     model.add(_convolutional_layer(nb_filter=256))
     model.add(BatchNormalization(axis=-1))
     model.add(ReLU())
+    """
     model.add(_convolutional_layer(nb_filter=256))
     model.add(BatchNormalization(axis=-1))
     model.add(ReLU())
@@ -208,7 +212,7 @@ def _dense_layer(output_dim):
 
 
 def compile_model(model):
-    adam = Adam(lr=0.000074)
+    adam = Adam(lr=0.0001)
     model.compile(
         loss='categorical_crossentropy',
         optimizer=adam,

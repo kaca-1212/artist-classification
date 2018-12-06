@@ -19,7 +19,7 @@ import pickle
 fixed_size = tuple((256, 256))
 
 # path to training data
-path = "dataset/train"
+path = "dataset/svm_reduced"
 
 # bins for histogram
 bins = 8
@@ -93,9 +93,9 @@ def fd_sift(image, bovw_dict):
     kp, desc = sift.detectAndCompute(gray,None)
     hist = np.zeros([300,1])
     for d in desc:
-        cluster = bovw_dict.predict(d)
+        cluster = bovw_dict.predict(d.reshape(1,-1))
         hist[cluster] += 1
-    return list(hist)
+    return hist.flatten()
 
 def fd_hog(image):
     hog = cv2.HOGDescriptor()
@@ -111,14 +111,14 @@ def fd_orb(image):
     return kp
 
 def fd_gist(image):
-    return gist.extract(img)
+    return gist.extract(image)
 
 def fd_lbp(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     lbp = local_binary_pattern(gray, P=16, R=2)
     return lbp
 
-active_fd = [0,0,0,1,0,0,0,0]
+active_fd = [0,0,0,1,0,0,1,0]
 # # get the training labels
 # train_labels = os.listdir(train_path)
 
@@ -135,14 +135,16 @@ def get_feature_vectors(path):
     # images_per_class = 80
     bovw_dict = create_BOVW(path)
     checkpoint = 1
-    
+    image_count = len(os.listdir(path))
     # loop over the training data sub-folders
     for ind, file in enumerate(os.listdir(path)):
-        if ind % 3000 == 2999:
+        if ind > 0 and ind % 3000 == 0:
+            print np.shape(global_features)
             print sys.getsizeof(global_features)
-            np.save('checkpoint' + str(checkpoint), np.array(global_features))
+            global_features = np.array(global_features)
+            np.save('checkpoint' + str(checkpoint), global_features.astype('float16'))
             # np.save('labels'+str(checkpoint),np.array(labels))
-            if max_features:
+            if 'max_features' in dir():
                 max_features = np.max(np.vstack([max_features, global_features]), axis=0)
                 min_features = np.min(np.vstack([min_features, global_features]), axis=0)
             else:
@@ -156,7 +158,7 @@ def get_feature_vectors(path):
         ### DO LATER
         
         print file
-
+        print "%.2f" % ((100*ind+0.0)/image_count)
 
 
         # read the image and resize it to a fixed-size
@@ -242,12 +244,12 @@ def get_feature_vectors(path):
     # print "[STATUS] target labels shape: {}".format(target.shape)
     
     for i in range(1, checkpoint + 1):
-        cp = np.load('checkpoint%s' % i, dtype=np.float32)
+        cp = np.load('checkpoint%s' % i)
         cp = (cp - min_features) / (max_features - min_features)
 
         encoding = int("".join(map(str, active_fd)), base=2)
 
-        t = target[(i-1) * 3000: i * 3000]
+        t = target[(i-1) * 3000: min(i * 3000, len(target))]
         # save the feature vector using HDF5
         h5f_data = h5py.File('output/data_%s_%s' % (str(encoding), i) + '.h5', 'w')
         h5f_data.create_dataset('dataset_1', data=np.array(global_features))
