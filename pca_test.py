@@ -13,10 +13,10 @@ from sklearn.svm import SVC
 from sklearn.externals import joblib
 from sklearn.decomposition import PCA
 
-features_test = ['gist'.'haralick','hist','hog','hu','SIFT']
-enable = [1,1,1,1,1,1]
+features_test = ['gist','haralick','hist','hog','hu','SIFT']
+enable = [0,0,1,1,1,1]
 
-label_file = h5py.File('labels.h5','r')
+label_file = h5py.File('output/labels.h5','r')
 labels = np.array(label_file['dataset_1'])
 
 features = np.array([])
@@ -24,19 +24,25 @@ features = np.array([])
 for i,feature in enumerate(features_test):
     if not enable[i]:
         continue
-    feature_file = h5py.File(featire+'_features.h5','r')
+    feature_file = h5py.File('output/'+feature+'_features.h5','r')
 
     if features.size == 0:
         features = np.array(feature_file['dataset_1'])
     else:
         features = np.hstack([features, np.array(feature_file['dataset_1'])])
-    
-pca = PCA(n_components = 50)
+labels = labels.flatten()
+print features.shape
+feature_count = min(features.shape[1], 100)
+pca = PCA(n_components = feature_count)
 
-features = pca.fit_transform(features)
+#features = pca.fit_transform(features)
 
+(train_data, test_data, train_label, test_label) = train_test_split(features, labels, test_size=0.2)
+
+train_data = pca.fit_transform(train_data)
+test_data = pca.transform(test_data)
 param_grid = [
-    {'C':[.00001,.0001,.001,0.01,1,10,100,1000,10000], 'gamma':[0.0001,0.001,0.01,0.1,1,10,100,1000], 'kernel':['rbf']}
+    {'C':[ .1,1,10,100,1000], 'gamma':[.0001,.001,.01,.1,1,10], 'kernel':['rbf']}
 ]
 
 model = GridSearchCV(SVC(), param_grid)
