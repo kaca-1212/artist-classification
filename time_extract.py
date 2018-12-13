@@ -56,12 +56,12 @@ for ind, combination in enumerate(A):
     #    {'C':[ .1,1,10,100,1000], 'gamma':[.0001,.001,.01,.1,1,10], 'kernel':['rbf']}
     #]
 
-    model = SVC(C=C, gamme=gamma, kernel='rbf')
+    model = SVC(C=C, gamma=gamma, kernel='rbf')
 
     model.fit(train_data, train_label)
     train_time = time.time() - train_time_start
     inference_time_start = time.time()
-    model.predict(test_data[0])
+    model.predict(np.array([test_data[0]]))
     inference_time = time.time() - inference_time_start
 
     times[ind][0] = train_time

@@ -8,6 +8,7 @@ from sklearn.preprocessing import MinMaxScaler
 from skimage.feature import greycomatrix, greycoprops, local_binary_pattern
 from sklearn.cluster import MiniBatchKMeans
 import gist
+import math
 import numpy as np
 import mahotas
 import cv2
@@ -116,9 +117,10 @@ def fd_gist(image):
 def fd_lbp(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     lbp = local_binary_pattern(gray, P=16, R=2)
-    return lbp
+    return lbp.flatten()
 
-active_fd = [0,0,0,1,0,0,1,0]
+active_fd = [1,1,1,1,1,0,1,0]
+encoding = int("".join(map(str,active_fd)),base=2)
 # # get the training labels
 # train_labels = os.listdir(train_path)
 
@@ -138,14 +140,16 @@ def get_feature_vectors(path):
     image_count = len(os.listdir(path))
     # loop over the training data sub-folders
     # Expected number of checkpoints
-    checkpoint_count = math.ceil(3000.0/ len(os.listdir(path)))
-    if 'checkpoint'+str(checkpoint) + '3.npy' not in os.listdir('.'):
+    checkpoint_count = int(math.ceil(3000.0/ len(os.listdir(path))))
+    print os.listdir('.')
+    print 'checkpoint_' + str(encoding) + '_' + str(checkpoint_count) + '.npy'	
+    if 'checkpoint_'+ str(encoding) + '_' + str(checkpoint_count) + '.npy' not in os.listdir('.'):
         for ind, file in enumerate(os.listdir(path)):
             if ind > 0 and ind % 3000 == 0:
                 print np.shape(global_features)
                 print sys.getsizeof(global_features)
                 global_features = np.array(global_features)
-                np.save('checkpoint' + str(checkpoint), global_features.astype('float16'))
+                np.save('checkpoint_' +str(encoding) + '_' +  str(checkpoint), global_features.astype('float16'))
                 # np.save('labels'+str(checkpoint),np.array(labels))
                 if 'max_features' in dir():
                     max_features = np.max(np.vstack([max_features, global_features]), axis=0)
@@ -201,7 +205,9 @@ def get_feature_vectors(path):
             ###################################
             # Concatenate global features
             ###################################
-            global_feature = np.hstack(feature_list)
+#            for feature in feature_list:
+#		print feature.shape
+	    global_feature = np.hstack(feature_list)
 
             # update the list of labels and feature vectors
             labels.append(current_label)
@@ -210,7 +216,7 @@ def get_feature_vectors(path):
         # Save the last few
         
         #print sys.getsizeof(global_features)
-        np.save('checkpoint' + str(checkpoint), np.array(global_features))
+        np.save('checkpoint_' + str(encoding) + '_' + str(checkpoint), np.array(global_features))
         # np.save('labels'+str(checkpoint),np.array(labels))
         #print np.array(global_features).shape
         max_features = np.max( np.vstack([ max_features, np.array(global_features) ])  )	    
@@ -241,16 +247,15 @@ def get_feature_vectors(path):
     # print "[STATUS] target labels: {}".format(target)
     # print "[STATUS] target labels shape: {}".format(target.shape)
     
-    for i in range(1, checkpoint + 1):
-        cp = np.load('checkpoint%s.npy' % i )
+    for i in range(1, checkpoint):
+        cp = np.load('checkpoint_%s_%s.npy' %(encoding, i) )
         cp = (cp - min_features) / (max_features - min_features)
 
-        encoding = int("".join(map(str, active_fd)), base=2)
-
+        
         t = target[(i-1) * 3000: min(i * 3000, len(target))]
         # save the feature vector using HDF5
         h5f_data = h5py.File('output/data_%s_%s' % (str(encoding), i) + '.h5', 'w')
-        h5f_data.create_dataset('dataset_1', data=np.array(global_features))
+        h5f_data.create_dataset('dataset_1', data=np.array(cp))
         h5f_data.close()
 
         h5f_label = h5py.File('output/labels_%s_%s' % (str(encoding), i) + '.h5', 'w')

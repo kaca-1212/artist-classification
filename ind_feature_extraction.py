@@ -134,7 +134,7 @@ for ind, f in enumerate(os.listdir(data_path)):
         features = np.vstack((features, fd_sift(img,kmeans)))
 extraction_time = time.time() - start_time
 avg_time = extraction_time/num_images
-avg_extraction_times[0] = avg_time
+avg_extraction_times[0][0] = avg_time
 """
 f_save = h5py.File('output/SIFT_features.h5','w')
 f_save.create_dataset('dataset_1',data=features)
@@ -171,7 +171,7 @@ for ind, func in enumerate(feature_functions):
             features = np.vstack((features, func(img)))
     extraction_time = time.time() - start_time
     avg_time = extraction_time/num_images
-    avg_extraction_times[ind + 1] = avg_time
+    avg_extraction_times[0][ind + 1] = avg_time
     """
     f_save = h5py.File('output/' + feature_names[ind] + '_features.h5','w')
     f_save.create_dataset('dataset_1',data = features)

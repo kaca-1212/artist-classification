@@ -47,12 +47,12 @@ def _cnn(imgs_dim, compile_=True):
     model.add(_convolutional_layer(nb_filter=32))
     model.add(BatchNormalization(axis=-1))
     model.add(ReLU())
-    """ 
+     
 
     model.add(_convolutional_layer(nb_filter=32))
     model.add(BatchNormalization(axis=-1))
     model.add(ReLU())
-
+    """
     model.add(_convolutional_layer(nb_filter=32))
     model.add(BatchNormalization(axis=-1))
     model.add(ReLU())
@@ -61,7 +61,7 @@ def _cnn(imgs_dim, compile_=True):
     model.add(_convolutional_layer(nb_filter=64))
     model.add(BatchNormalization(axis=-1))
     model.add(ReLU()
-    """ 
+     
     model.add(_convolutional_layer(nb_filter=64))
     model.add(BatchNormalization(axis=-1))
     model.add(ReLU())
@@ -70,15 +70,15 @@ def _cnn(imgs_dim, compile_=True):
     model.add(BatchNormalization(axis=-1))
     model.add(ReLU())
     model.add(MaxPooling2D(pool_size=(2, 2)))
+    
+    model.add(_convolutional_layer(nb_filter=128))
+    model.add(BatchNormalization(axis=-1))
+    model.add(ReLU())
+        
+    model.add(_convolutional_layer(nb_filter=128))
+    model.add(BatchNormalization(axis=-1))
+    model.add(ReLU())
     """
-    model.add(_convolutional_layer(nb_filter=128))
-    model.add(BatchNormalization(axis=-1))
-    model.add(ReLU())
-    """    
-    model.add(_convolutional_layer(nb_filter=128))
-    model.add(BatchNormalization(axis=-1))
-    model.add(ReLU())
-
     model.add(_convolutional_layer(nb_filter=128))
     model.add(BatchNormalization(axis=-1))
     model.add(ReLU())
@@ -87,11 +87,11 @@ def _cnn(imgs_dim, compile_=True):
     model.add(_convolutional_layer(nb_filter=256))
     model.add(BatchNormalization(axis=-1))
     model.add(ReLU())
-    """    
+        
     model.add(_convolutional_layer(nb_filter=256))
     model.add(BatchNormalization(axis=-1))
     model.add(ReLU())
-
+    """
     model.add(_convolutional_layer(nb_filter=256))
     model.add(BatchNormalization(axis=-1))
     model.add(ReLU())
@@ -179,10 +179,10 @@ def _run_model():
 
     predict_generator = predict_datagen.flow_from_directory(data_path + '/test', target_size=(256,256),batch_size = batch_size, class_mode = 'categorical')
 
-    model.load_weights('run3.h5')
+    model.load_weights('run4.h5')
     start = time.time()
     print(model.metrics_names)
-    print(model.evaluate_generator(predict_generator))
+    print(model.evaluate_generator(predict_generator,steps=47))
     end = time.time()-start
     print(end/743)
 

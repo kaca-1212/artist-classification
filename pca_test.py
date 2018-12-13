@@ -10,11 +10,14 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.metrics import confusion_matrix, accuracy_score, classification_report
 from sklearn.svm import SVC
+from sklearn.linear_model import LogisticRegression
 from sklearn.externals import joblib
 from sklearn.decomposition import PCA
+import time
+
 
 features_test = ['gist','haralick','hist','hog','hu','SIFT']
-enable = [0,0,1,1,1,1]
+enable = [1,0,1,0,0,0]
 
 label_file = h5py.File('output/labels.h5','r')
 labels = np.array(label_file['dataset_1'])
@@ -42,13 +45,22 @@ pca = PCA(n_components = feature_count)
 train_data = pca.fit_transform(train_data)
 test_data = pca.transform(test_data)
 param_grid = [
-    {'C':[ .1,1,10,100,1000], 'gamma':[.0001,.001,.01,.1,1,10], 'kernel':['rbf']}
+    {'C':[ .1,1,10,100,1000]}
 ]
 
-model = GridSearchCV(SVC(), param_grid)
+print train_data.shape
 
+model = LogisticRegression(C=10)#SVC(C=10, gamma=1, kernel='rbf')#GridSearchCV(LogisticRegression(), param_grid)
+start_time = time.time()
 model.fit(train_data, train_label)
-print model.best_estimator_
+train_time = time.time()-start_time
+print "Train: " + str(train_time)
+#print model.best_estimator_
 #y_pred = model.predict(test_data)
 #print confusion_matrix(test_label, y_pred)
-print "Accuracy:", model.score(test_data, test_label)
+
+start_time = time.time()
+model.predict(np.array([test_data[0]]))
+inf_time = time.time()-start_time
+print "Inf: " + str(inf_time)
+print "Accuracy:", model.score(train_data, train_label)

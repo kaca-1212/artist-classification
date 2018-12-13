@@ -16,20 +16,22 @@ import cv2
 from matplotlib import pyplot
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.model_selection import KFold, StratifiedKFold, StratifiedShuffleSplit
+import sklearn.metrics as metrics
 from sklearn.model_selection import GridSearchCV
 from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.metrics import confusion_matrix, accuracy_score, classification_report
 from sklearn.svm import SVC
 from sklearn.externals import joblib
 from feature_extraction import get_feature_vectors
+from sklearn.kernel_approximation import RBFSampler
 
 # train_test_split size
 test_size = 0.10
-NUM_FILES = 100
+NUM_FILES = 3
 
 # create all the machine learning models
 # model = SVC(kernel='rbf', C = 200, gamma='auto', decision_function_shape='ovr')
-model = SGDClassifier()
+model = SGDClassifier( loss='log',n_iter = 1000000)
 # param_grid = [ {'C':[0.01,0.1,1,10,100,1000], 'gamma':['auto'],'kernel':['linear', 'rbf']} ]
 #model = GridSearchCV(SVC(),param_grid = param_grid, cv=StratifiedShuffleSplit(n_splits=5, test_size=0.2, random_state=42))
 #model = LogisticRegression(C=10)
@@ -41,16 +43,34 @@ scoring = "accuracy"
 
 # import the feature vector and trained labels
 
-for i in range(NUM_FILES):
-    h5f_data = h5py.File('output/data3_%s.h5' % i, 'r')
-    h5f_label = h5py.File('output/labels3_%s.h5' % i , 'r')
+active_fd = [1,1,1,1,1,0,1,0]
 
-    all_features_string = h5f_data['dataset_1']
-    all_labels_string = h5f_label['dataset_1']
+feature_encoding = int("".join(map(str,active_fd)),base=2)
 
-    all_features = np.array(all_features_string)
-    all_labels = np.array(all_labels_string)
+# Get all labels
 
+all_labels = np.array([])
+for i in range(1,NUM_FILES + 1):
+    h5f_label = h5py.File('output/labels_%s_%s.h5' %(feature_encoding, i), 'r')
+    all_labels = np.append(all_labels, np.array(h5f_label['dataset_1']))
+
+all_labels = np.unique(all_labels)
+all_test_labels = np.array([])
+
+# Initialize RBF Approximator
+rbf_feature = RBFSampler(gamma=1, n_components = 100, random_state = 1)
+
+for i in range(1, NUM_FILES + 1):
+    h5f_data = h5py.File('output/data_%s_%s.h5' %(feature_encoding, i), 'r')
+    h5f_label = h5py.File('output/labels_%s_%s.h5' % (feature_encoding, i) , 'r')
+
+    global_features_string = h5f_data['dataset_1']
+    global_labels_string = h5f_label['dataset_1']
+	
+    
+    global_features =rbf_feature.fit_transform( np.array(global_features_string))
+    global_labels = np.array(global_labels_string)
+    
 # use this if feature memory is too large to cast to np.array directly
 
 
@@ -81,6 +101,14 @@ for i in range(NUM_FILES):
                                                                                               np.array(global_labels),
                                                                                               test_size=test_size)
 
+   
+    
+    if 'all_test_data' in dir():
+	print all_test_data.shape
+	all_test_data = np.vstack((all_test_data, testDataGlobal))
+    else:
+	all_test_data = testDataGlobal
+    all_test_labels = np.append(all_test_labels, testLabelsGlobal)
     print "[STATUS] splitted train and test data..."
     print "Train data  : {}".format(trainDataGlobal.shape)
     print "Test data   : {}".format(testDataGlobal.shape)
@@ -102,12 +130,14 @@ for i in range(NUM_FILES):
 
 
 
-    model.partial_fit(trainDataGlobal, trainLabelsGlobal)
+    model.partial_fit(trainDataGlobal, trainLabelsGlobal, classes = all_labels)
     # print model.cv_results_
     
-y_pred = model.predict(testDataGlobal)
-print confusion_matrix(testLabelsGlobal, y_pred)
+y_pred = model.predict(all_test_data)
+print confusion_matrix(all_test_labels, y_pred)
 # path to test data
 test_path = "dataset/test"
 
 print "Accuracy:", model.score(testDataGlobal, testLabelsGlobal)
+
+print metrics.classification_report(all_test_labels, y_pred)
