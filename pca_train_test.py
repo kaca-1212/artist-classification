@@ -40,25 +40,25 @@ feature_count = min(features.shape[1], 100)
 pca = PCA(n_components = feature_count)
 
 #features = pca.fit_transform(features)
-splitter =  StratifiedShuffleSplit(1, features, labels, test_size=0.1)
-train_indices, test_indices = next(splitter.split(features, labels))
+val_splitter =  StratifiedShuffleSplit(1, features, labels, test_size=1.0/9)
+train_indices, val_indices = next(val_splitter.split(features, labels))
 
-(train_data, test_data, train_label, test_label) =features[train_indices], labels[train_indices], features[test_indices], labels[test_indices]
+(train_data, train_label, val_data, val_label) =features[train_indices], labels[train_indices], features[val_indices], labels[val_indices]
 
-# Fit the PCA on the training data, then additionally transform the test data
+# Fit the PCA on the training data, then additionally transform the validation data
 train_data = pca.fit_transform(train_data)
-test_data = pca.transform(test_data)
+val_data = pca.transform(val_data)
 
 # Form the parameter grid for the grid search
-param_grid = [
-    {'C':[ .00001, .0001, .001, .01,.1,1,10,100,1000, 10000], 'gamma':[.00001, .0001, .001, .01, .1, 1, 10, 100, 1000, 10000], 'kernel':['rbf','linear']}
-]
+#param_grid = [
+#    {'C':[ .00001, .0001, .001, .01,.1,1,10,100,1000, 10000], 'gamma':[.00001, .0001, .001, .01, .1, 1, 10, 100, 1000, 10000], 'kernel':['rbf','linear']}
+#]
 
 # The LR baseline
 # model = LogisticRegression(C=10)
 # The SVM after params are found from grid search
-# model = SVC(C=10, gamma=1, kernel='rbf')
-model = GridSearchCV(SVC(), param_grid)
+model = SVC(C=10, gamma=1, kernel='rbf')
+#model = GridSearchCV(SVC(), param_grid)
 
 # Time the training
 start_time = time.time()
@@ -68,11 +68,11 @@ print "Train time: " + str(train_time)
 
 # Time the inference
 start_time = time.time()
-y_pred = model.predict(np.array([test_data[0]]))
+y_pred = model.predict(val_data)
 inf_time = time.time()-start_time
 
 # Show the confusion matrix
-print confusion_matrix(test_label, y_pred)
+print confusion_matrix(val_label, y_pred)
 
 print "Inf time: " + str(inf_time)
-print "Accuracy:", model.score(train_data, train_label)
+print "Accuracy:", model.score(val_data, val_label)
