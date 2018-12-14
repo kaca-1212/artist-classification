@@ -18,4 +18,17 @@ The CNN is trained through the train_cnn.py script. This script defines the trai
 The CNN is tested through the run_cnn.py script. This script loads the saved weights from train_cnn.py and runs them on the test set to find accuracy and other metrics, as well as the confusion matrix.
 
 ## Required Modules
-Required modules include h5py, numpy, opencv-contrib-python, matplotlib, sklearn, keras, tensorflow, seaborn, pandas, scikit-image, gist, mahotas, pickle.
+Required modules include h5py, numpy, opencv-contrib-python, matplotlib, sklearn, keras, tensorflow, seaborn, pandas, scikit-image, gist, mahotas, pickle. The scripts for the SVM (feature_extraction.py, pca_train_test.py) are written for Python 2 and the scripts for the CNN (train_cnn.py, run_cnn.py) are written for Python 3.
+
+## Execution
+The scripts for the SVM are executed as
+...
+$ python2 feature_extraction.py
+$ python2 pca_train_test.py
+...
+
+The scripts for the CNN are executed as
+...
+$ train_cnn.py
+$ test_cnn.py
+...
