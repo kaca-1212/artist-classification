@@ -47,4 +47,4 @@ Required modules include:
 - pandas
 - gist
 - mahotas
-- pickle.
+- pickle
