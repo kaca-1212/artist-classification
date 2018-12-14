@@ -14,6 +14,11 @@ from keras.models import Sequential, load_model
 from keras.optimizers import Adam
 from keras.preprocessing.image import load_img, img_to_array, ImageDataGenerator
 from keras.regularizers import l2
+from sklearn.metrics import confusion_matrix, classification_report
+import numpy as np
+import seaborn as sn
+import pandas as pd
+import matplotlib.pyplot as plt
 
 MAX_EPOCHS = 500
 BATCH_SIZE = 96
@@ -67,14 +72,13 @@ def _cnn(imgs_dim, compile_=True):
     model.add(_convolutional_layer(nb_filter=64))
     model.add(BatchNormalization(axis=-1))
     model.add(ReLU())
-    """
+
 
     model.add(_convolutional_layer(nb_filter=64))
     model.add(BatchNormalization(axis=-1))
     model.add(ReLU())
     model.add(MaxPooling2D(pool_size=(2, 2)))
 
-    """
     model.add(_convolutional_layer(nb_filter=128))
     model.add(BatchNormalization(axis=-1))
     model.add(ReLU())
@@ -182,14 +186,23 @@ def _load_trained_cnn_layer(model_path, layer_index):
 IMGS_DIM_3D = (256, 256,3)
 def _run_model():
     model = _cnn(IMGS_DIM_3D)
-    predict_datagen = ImageDataGenerator()
-
-    predict_generator = predict_datagen.flow_from_directory(data_path + '/test', target_size=(256,256),batch_size = batch_size, class_mode = 'categorical')
+    test_datagen = ImageDataGenerator()
+    test_generator = test_datagen.flow_from_directory(data_path + '/test', target_size=(256,256),batch_size = batch_size, class_mode = 'categorical', shuffle=False)
 
     model.load_weights('run4.h5')
+    Y_pred = model.predict_generator(test_generator, 47)
+    y_pred = np.argmax(Y_pred, axis=1)
+    true_labels = test_generator.classes
+    cm = confusion_matrix(true_labels, y_pred)
+    print(cm)
+    df_cm = pd.DataFrame(cm, range(15),range(15))
+    plt.figure(figsize=(10,7))
+    sn.heatmap(df_cm, annot=True)
+    plt.savefig('confusion_matrix_cnn.png')
+    print(classification_report(true_labels, y_pred))
     start = time.time()
     print(model.metrics_names)
-    print(model.evaluate_generator(predict_generator,steps=47))
+    print(model.evaluate_generator(test_generator,steps=47))
     end = time.time()-start
     print(end/743)
 
