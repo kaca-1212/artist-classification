@@ -49,15 +49,3 @@ Required modules include:
 - mahotas
 - pickle
 
-## Execution
-The scripts for the SVM are executed as
-...
-$ python2 feature_extraction.py
-$ python2 pca_train_test.py
-...
-
-The scripts for the CNN are executed as
-...
-$ train_cnn.py
-$ test_cnn.py
-...
