@@ -12,6 +12,7 @@ import sys
 import pickle
 import time
 
+fixed_size = tuple((256, 256))
 data_path = 'dataset/svm_reduced'
 
 # Create the BOVW dictionary for use in extracting SIFT features
@@ -147,7 +148,7 @@ f_save.close()
 l_save.close()
 
 feature_functions = [fd_histogram, fd_hog, fd_gist, fd_hu_moments, fd_haralick]
-feature_names = ['hist','hog','gist''hu', 'haralick',]
+feature_names = ['hist','hog','gist','hu', 'haralick']
 
 # Extract features for each descriptor separately and save to separate files
 for ind, func in enumerate(feature_functions):
